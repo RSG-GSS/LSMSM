@@ -53,9 +53,30 @@ end
 
 #wage equation
 function wage(e::Int64, l1::Int64, p::params, gεwiu::Float64)
-    @unpack α0w, α1w, α2w = p
-    return exp(α0w + α1w*log(convert(Float64,e)+1.0)+α2w*convert(Float64,l1) + gεwiu)
+    @unpack αw0, αw1, αw2 = p
+    return exp(αw0 + αw1*log(convert(Float64,e)+1.0)+αw2*convert(Float64,l1) + gεwiu)
 end
+
+#approximate inverse of EdU 
+function calcEDUinv(Edu::Float64, fp::fparams)
+    @unpack θ = fp
+    return Edu^(1./(θ-1.))
+end
+
+#approximate inverse of EV
+function calcEVinv(EV::Float64, fp::fparams)
+    @unpack θ = fp
+    return (θ*EV)^(1./θ)    
+end
+
+#reversing the inverse of EV
+function calcEVinvinv(EV::Float64, fp::fparams)
+    @unpack θ = fp
+    return (1./θ)*(EV^θ)    
+end
+
+
+
 
 
 

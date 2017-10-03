@@ -1,7 +1,10 @@
-function objectivefunc!(p::Array{Float64,1},fp::fparams,moments::structureM)
+function objectivefunc!(initp0::Array{Float64,1},fp::fparams,moments::structureM)
     sd = 2230
     srand(sd)  
-    p0 = pv2p0(p)
+    p0 = pv2p0(initp0)
+    for i in 1:length(initp0)
+        println("$(fieldnames(p0)[i])", "\t $(initp0[i])" )
+    end
     gr = grids(fp,p0)    
     #initializing the EV and EDU arrays
     lEV, lEDU = initEVEDU(fp)
@@ -14,7 +17,7 @@ function objectivefunc!(p::Array{Float64,1},fp::fparams,moments::structureM)
     rvu = rand(derru, fp.totn, fp.nsim)
     #solving the model
     for a = fp.nper:(-1):1
-        #println("a $(a)")                
+        println("a $(a)")                
         for ei = 1:gr.ngpe[a] 
             #println("ei $ei")                          
             for ki = 1:fp.ngpk

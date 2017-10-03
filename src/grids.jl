@@ -59,17 +59,22 @@ function nxtebds(a::Int64, ngpl::Int64, maxngpe::Int64, ngpe::Array{Int64,1}, ge
     e1ub = Array{Int64}(ngpl,maxngpe)
     e1 = Array{Int64}(ngpl,maxngpe)
     a1 = a+1
-    for ei = 1:ngpe[a1] 
+    for ei = 1:ngpe[a] 
+        #println("ei $ei")
         for l = 1:ngpl
             e1[l,ei] = ge[ei,a] + l-1
+            #println("e1 $(e1[l,ei])")
             for nei = 1:ngpe[a1]
-                if abs(ge[nei,a1]-e1[l,ei] <= 0.00001)
+                #println("nei $nei")
+                if abs(ge[nei,a1]-e1[l,ei]) <= 0.00001
                     e1lb[l,ei] = nei
                     e1ub[l,ei] = nei
+                    #println("e1lb $(e1lb[l,ei])", "e1ub $(e1ub[l,ei])")
                     break
-                else
+                elseif ge[nei,a1]>e1[l,ei]
                     e1lb[l,ei] = nei-1
                     e1ub[l,ei] = nei
+                    #println("e1lb $(e1lb[l,ei])", "e1ub $(e1ub[l,ei])") 
                     break
                 end
             end
@@ -139,14 +144,53 @@ function trprob(gεw::Array{Float64,1}, gεu::Array{Float64,1}, p0::params, fp::
             cdfwu[iv,iu] = cdfw[iv]*cdfu[iu]
         end
     end
-    pgridwu[1,1] = ((cdfwu[1,1] + cdfwu[2,1])/2. + (cdfwu[1,2] + cdfwu[2,2])/2.)/2.
-    pgridwu[1,ngu] = 1. - (((cdfwu[1,ngu-1] + cdfwu[2,ngu-1])/2. + (cdfwu[1,ngu] + cdfwu[2,ngu])/2.)/2.)
-    pgridwu[ngu,1] = 1. - (((cdfwu[ngu-1,1] + cdfwu[ngu,1])/2. + (cdfwu[ngu-1,2] + cdfwu[ngu,2])/2.)/2.)
-    pgridwu[ngu,ngu] = 1. - (((cdfwu[ngu-1,ngu-1] + cdfwu[ngu,ngu-1])/2. + (cdfwu[ngu-1,ngu] + cdfwu[ngu,ngu])/2.)/2.)
 
-    for iu = 2:ngu-1
-        for iv = 2:ngu-1
-            pgridwu[iv,iu] = ((cdfwu[iv+1,iu] + cdfwu[iv+1,iu+1])/2. - (cdfwu[iv-1,iu] + cdfwu[iv-1,iu+1])/2.)/2.
+    for iu = 1:ngu        
+        for iv = 1:ngu            
+            #println("iv $iv","iu $iu")
+            if iv == 1
+                if iu == 1
+                    #println("here1")
+                    pgridwu[iv,iu] = ((cdfwu[iv,iu] + cdfwu[iv+1,iu])/2. + (cdfwu[iv,iu+1] + cdfwu[iv+1,iu+1])/2.)/2.
+                else
+                    if iu < ngu
+                        #println("here4")
+                        pgridwu[iv,iu] = ((cdfwu[iv,iu+1] - cdfwu[iv,iu-1])/2. + (cdfwu[iv+1,iu+1] - cdfwu[iv+1,iu-1])/2.)/2.
+                    else
+                        #println("here5")
+                        pgridwu[iv,iu] = (cdfw[iv]+cdfw[iv+1])/2. - ((cdfwu[iv,iu-1] + cdfwu[iv,iu])/2. + (cdfwu[iv+1,iu-1] + cdfwu[iv+1,iu])/2.)/2.
+                    end
+                end
+            else
+                if iv <ngu
+                    if iu == 1
+                        #println("here2")
+                        pgridwu[iv,iu] = ((cdfwu[iv+1,iu] - cdfwu[iv-1,iu])/2. + (cdfwu[iv+1,iu+1] - cdfwu[iv-1,iu+1])/2.)/2.
+                    else
+                        if iu < ngu
+                            #println("here8")    
+                            pgridwu[iv,iu] = ((cdfwu[iv+1,iu+1] - cdfwu[iv-1,iu+1])/2. - (cdfwu[iv+1,iu-1] - cdfwu[iv-1,iu-1])/2.)/2.
+                        else
+                            #println("here6")
+                            pgridwu[iv,iu] = (cdfw[iv+1]-cdfw[iv-1])/2. - ((cdfwu[iv+1,iu-1] + cdfwu[iv+1,iu])/2. - (cdfwu[iv-1,iu-1] + cdfwu[iv-1,iu])/2.)/2.
+                        end
+                    end
+                else
+                    if iu == 1
+                        #println("here3")
+                        pgridwu[iv,iu] = (cdfu[iu]+cdfu[iu+1])/2. - ((cdfwu[iv-1,iu] + cdfwu[iv,iu])/2. + (cdfwu[iv-1,iu+1] + cdfwu[iv,iu+1])/2.)/2.
+                    else
+                        if iu < ngu
+                            #println("here7")
+                            pgridwu[iv,iu] = (cdfu[iu+1]-cdfu[iu-1])/2. - ((cdfwu[iv-1,iu+1] + cdfwu[iv,iu+1])/2. - (cdfwu[iv-1,iu-1] + cdfwu[iv,iu-1])/2.)/2.
+                        else
+                            #println("here9")
+                            pgridwu[iv,iu] = (1 - (cdfw[iv-1] + cdfw[iv])/2. - (cdfu[iu-1] + cdfu[iu])/2.
+                                        + ((cdfwu[iv-1,iu-1] + cdfwu[iv,iu-1])/2. + (cdfwu[iv-1,iu] + cdfwu[iv,iu])/2.)/2.)
+                        end
+                    end
+                end
+            end
         end
     end
     return pgridwu

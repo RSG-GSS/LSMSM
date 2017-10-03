@@ -53,10 +53,11 @@ function get_cEmtr!(lEDU::Array{single_1,1}, lEV::Array{single_1,1}, a::Int, ei:
     e = ge[ei,a]
     age = a+19
     k = gk[ki]
+    #println("here")
     if a<nper
         e1, e1lb, e1ub = nxtebds(a, ngpl, maxngpe, ngpe, ge)
     end
-
+    #println("here2")
     for iu = 1:ngu
         for iv = 1:ngu
             y[2] = exp(αw0 + αw1*log(e+1)+αw2*l1 + gεw[iv]) #grids for the epsilon.
@@ -65,30 +66,41 @@ function get_cEmtr!(lEDU::Array{single_1,1}, lEV::Array{single_1,1}, a::Int, ei:
                 resources = R*k+y[l]
                 if (a<nper)                    
                     e1val = e1[l,ei]
+                    #println("e1val $e1val")
                     e1lbi = e1lb[l,ei]
                     e1ubi = e1ub[l,ei]
-                    e1lbval = ge[e1lbi+1,a+1]
-                    e1ubval = ge[e1ubi+1,a+1]
+                    e1lbval = ge[e1lbi,a+1]
+                    #println("e1lbval $e1lbval")
+                    e1ubval = ge[e1ubi,a+1]
+                    #println("e1ubval $e1ubval")
                     eulerArr = LinInterp1d.(e1val, e1lbval, e1ubval, lEDU[a+1].m0[l,:,e1lbi],lEDU[a+1].m0[l,:,e1ubi])
-                    eulerArr = (((β*R)^(1./(θ-1)))/exp(αc*(l.-1.)/(θ-1)))*eulerArr - (resources-gk[:]) 
+                    eulerArr = (((β*R)^(1./(θ-1.)))/exp(αc*(l.-1.)/(θ-1.)))*eulerArr - (resources-gk[:]) 
+                    #println("eulerArr $eulerArr")
                     k1, lbk, ubk = solveEE(ngpk, eulerArr, gk)
-                    c[l] = max(resources - k1,0.00001)
-                    v[l] = (util(c[l], l-1, age, gεu[iu], p0, fp) + β*LinInterp2d(k1,gk[lbk],gk[ubk],e1val,e1lbval,e1ubval, lEV[a+1].m0[l,lbk,e1lbi], lEV[a+1].m0[l,lbk,e1ubi],lEV[a+1].m0[l,ubk,e1lbi],lEV[a+1].m0[l,ubk,e1ubi]))
+                    #println("k1 $k1", "lbk $lbk", "ubk $ubk")
+                    c[l] = max(resources - k1,0.001)
+                    v[l] = (util(c[l], l-1, age, gεu[iu], p0, fp) + 
+                        β*calcEVinvinv(LinInterp2d(k1,gk[lbk],gk[ubk],e1val,e1lbval,e1ubval, lEV[a+1].m0[l,lbk,e1lbi], lEV[a+1].m0[l,lbk,e1ubi],lEV[a+1].m0[l,ubk,e1lbi],lEV[a+1].m0[l,ubk,e1ubi]),fp))
                 else
-                    c[l] = max(resources, 0.00001)
+                    c[l] = max(resources, 0.001)
                     #println("resources $resources")
                     v[l] = util(c[l], l-1, age, gεu[iu], p0, fp) 
                     #println("util $(util(c[l], l-1, age, gεu[iu], p0))")                   
                 end
             end
-            #println("v $v","\t c $c")
+            #println("v $(v)","\t c $(c)")
             optV[iv,iu], act = findmax(v)
             optDU[iv,iu] = dudc(c[act], act-1, p0, fp)
         end
     end
+    #if a==1
+    #    println("a $a", " ei $ei"," ki $ki", "l_1 $l_1")
+    #    println("eulerarr $eulerArr")
+    #end
+    
     #println("optV $optV")
-    lEV[a].m0[l_1,ki,ei] = sum([trp[iu]*optV[iu] for iu in eachindex(trp)])
-    lEDU[a].m0[l_1,ki,ei] = sum([trp[iu]*optDU[iu] for iu in eachindex(trp)])
+    lEV[a].m0[l_1,ki,ei] = calcEVinv(sum([trp[iu]*optV[iu] for iu in eachindex(trp)]),fp)
+    lEDU[a].m0[l_1,ki,ei] = calcEDUinv(sum([trp[iu]*optDU[iu] for iu in eachindex(trp)]),fp)
     return nothing
 end
 
@@ -114,9 +126,9 @@ function getopt!(sim::Array{sim_t,2}, rep::Int, i::Int, a::Int, ai::Int, irvw::A
     y[2] = exp(αw0 + αw1*log(sim[i,rep].aa.Oh.e[ai]+1)+αw2*(convert(Float64,sim[i,rep].aa.Oh.l_1[ai])-1.) + irvw[ai])
     for l = 1:ngpl                    
         e1val[l] = sim[i,rep].aa.Oh.e[ai] + (l - 1)        
-        #println("ai $ai","\t l $l", "\t e1val $e1val[l]")
+        #println("ai $ai","\t l $l", "\t e1val $(e1val[l])")
         if a == maxa
-            c[l] = max(R*sim[i,rep].aa.Oh.k[ai]+y[l],0.00001)
+            c[l] = max(R*sim[i,rep].aa.Oh.k[ai]+y[l],0.001)
             v[l] = util(c[l], l-1, a, irvu[ai], p0, fp)
         else
             #bounds on next period's experience
@@ -124,14 +136,24 @@ function getopt!(sim::Array{sim_t,2}, rep::Int, i::Int, a::Int, ai::Int, irvw::A
             #println("e1val $(e1val[l])")
             #println("first gr.ge $(gr.ge)")
             lbe1, ube1 = bounds(e1val[l],ge[1:ngpe[ai+1],ai+1],ngpe[ai+1])
+            #println("lbe1 $lbe1", " ube1 $ube1")
             lbe1val = ge[lbe1,ai+1]
             ube1val = ge[ube1,ai+1]
-            #optimal consumption and V conditional on labor suppy
+            #optimal consumption and V conditional on labor supply
             eulerArr = LinInterp1d.(e1val[l],lbe1val,ube1val,lEDU[ix].m0[l,:,lbe1],lEDU[ix].m0[l,:,ube1])
-            eulerArr = (((β*R)^(1./(θ-1)))/exp(αc*(l.-1.)/(θ-1.)))*eulerArr - (R*sim[i,rep].aa.Oh.k[ai]+y[l]-gk[:]) 
+            eulerArr = (((β*R)^(1./(θ-1.)))/exp(αc*(l.-1.)/(θ-1.)))*eulerArr - (R*sim[i,rep].aa.Oh.k[ai]+y[l]-gk[:]) 
+            #if ai == 1
+            #    println("e $(sim[i,rep].aa.Oh.e[ai])"," k $(sim[i,rep].aa.Oh.k[ai])")
+            #    println("irvw $(irvw[ai])", "irvu $(irvu[ai])")
+            #    println("eulerArr $eulerArr")
+            #end
             k1[l], lbk, ubk = solveEE(ngpk, eulerArr, gk)
-            c[l] = max(R*sim[i,rep].aa.Oh.k[ai]+y[l]-k1[l],0.00001)
-            v[l] = (util(c[l], l-1, a, irvu[ai], p0, fp) + β*LinInterp2d(k1[l],gk[lbk],gk[ubk],e1val[l],lbe1val,ube1val, lEV[ix].m0[l,lbk,lbe1], lEV[ix].m0[l,lbk,ube1],lEV[ix].m0[l,ubk,lbe1],lEV[ix].m0[l,ubk,ube1]))
+            #println("k1 $k1[l]", "lbk $lbk", "ubk $ubk")
+            c[l] = max(R*sim[i,rep].aa.Oh.k[ai]+y[l]-k1[l],0.001)
+            v[l] = (util(c[l], l-1, a, irvu[ai], p0, fp) + β*calcEVinvinv(LinInterp2d(k1[l],gk[lbk],gk[ubk],e1val[l],lbe1val,ube1val, lEV[ix].m0[l,lbk,lbe1], lEV[ix].m0[l,lbk,ube1],lEV[ix].m0[l,ubk,lbe1],lEV[ix].m0[l,ubk,ube1]),fp))
+            #if ai == 1
+            #    println("v $(v[l])")
+            #end
         end
     end 
     #subroutine SimValue ends here.

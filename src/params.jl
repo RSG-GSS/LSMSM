@@ -10,14 +10,12 @@ type params
     αw0 :: Float64
     αw1 :: Float64
     αw2 :: Float64
-    αw3 :: Float64
-    αw4 :: Float64
     σw :: Float64 
 end
 
 #function to initialize the parameter structe
 function params()
-    p0 = params(0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.)  
+    p0 = params(0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.)  
     return p0
 end
 
@@ -59,7 +57,7 @@ function fparams()
     fp0.ngu     = 6            # number of grids for random shocks (joint: ngu*ngu)
     fp0.ngpk    = 6             # number of grid points in assets
     fp0.maxk    = 20000.        # largest value of k in grid
-    fp0.mink    = 0.            # minumum value of k allowed
+    fp0.mink    = -100.            # minumum value of k allowed
     fp0.maxngpe = 5             # max number of grid points for experience
     fp0.ratio   = 4.0           # ratio for the asset grid
     fp0.nind    = 1000          # number of women - CHECK THIS FROM THE PSID!!!
@@ -159,12 +157,17 @@ function initsim(fp::fparams)
         sim[i] = (sim_t(0,0,OhCh_t(Oh_t(0,zeros(nper),zeros(nper),zeros(nper),zeros(nper),zeros(nper),zeros(nper),zeros(nper),
             zeros(nper)),Ch_t(zeros(nper),zeros(nper)))))
     end
+    data = readdlm("data.txt",'\t')
+    data[data.==-9] = NaN
+    data_cols = [:id, :age, :actual, :ls, :ls_1, :wage, :assets, :exper]                 
+    cols = Dict{Symbol,Int}()
+    for (i,k) in enumerate(data_cols); cols[k] = i end    
     for i = 1:nind
         for rep = 1:nsim
             sim[i,rep].id = i
             sim[i,rep].yob = 1986
-            sim[i,rep].aa.Oh.l_1[1] = 1
-            sim[i,rep].aa.Oh.k[1] = 0
+            sim[i,rep].aa.Oh.l_1[1] = 1            
+            sim[i,rep].aa.Oh.k[1] = data[(i-1)*41+1,cols[:assets]]            
             for j = 1:nper
                 sim[i,rep].aa.Oh.id = i
                 sim[i,rep].aa.Oh.a[j] = 20+j-1
@@ -197,18 +200,16 @@ end
 
 function pv2p0(p0::Array{Float64,1})
     p = params()
-    p.αc  = p0[1]
+    p.αc  = -exp((p0[1]-100)/100)
     p.αh0 = p0[2]
     p.αh1 = p0[3]
     p.αh2 = p0[4]
     p.αh3 = p0[5]
     p.αh4 = p0[6]
-    p.σu = p0[7]
+    p.σu = exp((p0[7]-100)/100)
     p.αw0 = p0[8]
     p.αw1 = p0[9]
     p.αw2 = p0[10]
-    p.αw3 = p0[11]
-    p.αw4 = p0[12]
-    p.σw = p0[13]
+    p.σw = exp((p0[11]-100)/100)
     return p
 end
