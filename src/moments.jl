@@ -1,6 +1,6 @@
 #an intermediate function to calculate the data moments
 function CalcMom(data::Array{Float64,2}, cols::Dict{Symbol,Int})
-    mom = Array(Float64,27)
+    mom = Array(Float64,25)
     #EMPLOYMENT      
     aget = [Array(data[:,cols[:age]].<=60), Array(data[:,cols[:age]].<=25), Array(data[:,cols[:age]].<=30), Array(data[:,cols[:age]].>30) & Array(data[:,cols[:age]].<=40), Array(data[:,cols[:age]].>40) & Array(data[:,cols[:age]].<=50), Array(data[:,cols[:age]].>50) ]
     f = 1
@@ -13,17 +13,21 @@ function CalcMom(data::Array{Float64,2}, cols::Dict{Symbol,Int})
     #TRANSITIONS 
     x1 = count(x->(x==1), data[Array(data[:,cols[:actual]] .== 1) & Array(data[:,cols[:ls_1]].==1),cols[:ls]])
     x2 = count(x->(x==2), data[Array(data[:,cols[:actual]] .== 1) & Array(data[:,cols[:ls_1]].==1),cols[:ls]])
-    mom[f] = x1/(x1+x2)
-    f += 1
-    mom[f] = 1-x1/(x1+x2)
+    if x2 == 0
+        mom[f] = 50
+    else
+        mom[f] = x1/(x1+x2)
+    end
     f += 1
     x1=0
     x2=0
     x1 = count(x->(x==2), data[Array(data[:,cols[:actual]] .== 1) & Array(data[:,cols[:ls_1]].==2),cols[:ls]])
     x2 = count(x->(x==1), data[Array(data[:,cols[:actual]] .== 1) & Array(data[:,cols[:ls_1]].==2),cols[:ls]])
-    mom[f] = x1/(x1+x2)
-    f+=1
-    mom[f] = 1-x1/(x1+x2)
+    if x2 == 0
+        mom[f] = 50
+    else
+        mom[f] = x1/(x1+x2)
+    end
     f +=1 
     #WAGES
     for n in aget
@@ -65,7 +69,7 @@ function CalcDataBootMom!(fp::fparams, moments::structureM)
     #bootstrap
     srand(1136)
     draws = rand(1:nind,nind,nboot)
-    boot_moments = Array(Float64,nmom,5)
+    boot_moments = Array(Float64,nmom,nboot)
     temp = Array(Float64,nmom)
     for b = 1:nboot
         #randomly re-draw with replacement from the original data
@@ -119,9 +123,11 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM)
         x1 += count(x->(x==1), sim[i].aa.Ch.l[ind])
         x2 += count(x->(x==2), sim[i].aa.Ch.l[ind])
     end
-    moments.simmom[f] = x1/(x1+x2)
-    f += 1
-    moments.simmom[f] = 1 - x1/(x1+x2)
+    if x2 ==0
+        moments.simmom[f] =50.
+    else
+         moments.simmom[f] = x1/(x1+x2)
+    end
     f +=1
     x1 = 0 
     x2 = 0
@@ -130,9 +136,11 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM)
         x1 += count(x->(x==2), sim[i].aa.Ch.l[ind])
         x2 += count(x->(x==1), sim[i].aa.Ch.l[ind])
     end
-    moments.simmom[f] = x1/(x1+x2)
-    f += 1
-    moments.simmom[f] = 1 - x1/(x1+x2)
+    if x2 ==0
+        moments.simmom[f] =50.
+    else
+        moments.simmom[f] = x1/(x1+x2)
+    end
     f += 1
 
     #WAGES

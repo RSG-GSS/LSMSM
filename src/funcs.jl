@@ -29,17 +29,26 @@ function util(c::Float64, l::Int64, age::Int64, epsu::Float64, p::params, fp::fp
     exptheta = exp(αc*lf)/θ
     #println("ac*lf $(αc*lf)","\t exp(αc*lf) $(exp(αc*lf))","\t exp(αc*lf)/θ $(exp(αc*lf)/θ)", "\t exptheta $(exptheta)")
     #println("\n c $c")
+    #println("age $age")
+    #println("αh0 $αh0", " αh1 $αh1", " αh2 $αh2"," αh3 $αh3", " αh4 $αh4")
     if age <= 25
         αh = αh0 + αh1
-    elseif age > 25 & age <= 30
-        αh = αh0 + αh2
-    elseif age > 30 & age < 40
-        αh = αh0
-    elseif age >= 40 & age < 50
-        αh = αh0 + αh3
     else
-        αh = αh0 + αh4
+        if age <= 30
+            αh = αh0 + αh2
+        else
+            if age < 40
+                αh = αh0
+            else 
+                if age < 50
+                    αh = αh0 + αh3
+                else
+                    αh = αh0 + αh4
+                end
+            end
+        end
     end
+    #println("αh $αh")
     #println("αh $(αh)","\t exptheta $(exptheta)", "\t c^θ $(c^θ)","\t epsu $epsu \n")
     return c^θ*exptheta+lf*(αh + epsu)
 end

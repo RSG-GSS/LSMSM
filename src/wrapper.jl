@@ -46,7 +46,7 @@ function objectivefunc!(initp0::Array{Float64,1},fp::fparams,moments::structureM
     end    
     CalcSimMom!(sim,fp, moments)
     difference = moments.dtamom - moments.simmom
-    obj = sum((difference[moments.withvar.==1].^2).*moments.wgtcov)
+    obj = sum((difference[moments.withvar.==1].^2).*(1./moments.wgtcov))
     #save("./sampleresults.jld", "lEV", lEV, "lEDU", lEDU, "p0", p0, "gr", gr, "sim", sim, "moments", moments, "obj", obj, "sd", sd)
     return obj
 end

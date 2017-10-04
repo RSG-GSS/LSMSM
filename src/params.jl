@@ -63,8 +63,8 @@ function fparams()
     fp0.nind    = 1000          # number of women - CHECK THIS FROM THE PSID!!!
     fp0.nsim     = 5             # number of simulations for each woman
     fp0.totn    = fp0.nind*(fp0.maxa - fp0.mina+1)
-    fp0.nmom    = 27            #the upper bound of the number of moments
-    fp0.nboot   = 5             #number of bootstrap iterations
+    fp0.nmom    = 25            #the upper bound of the number of moments
+    fp0.nboot   = 2             #number of bootstrap iterations
     return fp0
 end
 
@@ -183,7 +183,7 @@ function initmom(fp::fparams)
     @unpack nmom = fp
     cols = Dict{Symbol,Int}()
     columns = [:prE, :prE25, :prE30, :prE3040, :prE4059, :prE50p,
-                :UU, :UE, :EE, :EU,
+                :UU, :EE,
                 :mw, :mw25, :mw30, :mw3040, :mw4050, :mw50p, :stdw,
                 :mwq25e, :mwq50e, :mwq75e, :mwq90e,
                 :mk, :mk30, :mk3040, :mk4050, :mk50p, :stdk]
@@ -200,13 +200,13 @@ end
 
 function pv2p0(p0::Array{Float64,1})
     p = params()
-    p.αc  = -exp((p0[1]-100)/100)
+    p.αc  = -exp((p0[1]-10)/100)
     p.αh0 = p0[2]
     p.αh1 = p0[3]
     p.αh2 = p0[4]
     p.αh3 = p0[5]
     p.αh4 = p0[6]
-    p.σu = exp((p0[7]-100)/100)
+    p.σu = exp((p0[7]-10)/100)
     p.αw0 = p0[8]
     p.αw1 = p0[9]
     p.αw2 = p0[10]
