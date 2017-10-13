@@ -17,6 +17,7 @@ using Mparams				##### For params.
 using Mgrids				##### For grids.
 using Distributions: Normal	##### For Normal().
 using Msolvesim							##### For get_cEmtr!.
+using Msolvesim2						##### For getopt2().
 using Mmoments							##### For CalcSimMom!.
 ##### Specify names to be exported.
 export

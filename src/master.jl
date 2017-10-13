@@ -1,7 +1,16 @@
 #import packages, functions, etc. - only uncomment for the first run
 #include("setup.jl")
 ##### Run setup on all workers.
-@everywhere include("setup.jl");
+#@everywhere include("setup.jl");
+
+using Mparams
+using Mgrids
+using Mfuncs
+using Msolvesim
+using Msolvesim2
+using Mmoments
+using Mwrapper
+using Mwrapper2
 
 #initialize the fixed parameters
 fp = fparams();

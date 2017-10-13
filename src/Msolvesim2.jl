@@ -16,6 +16,8 @@ module Msolvesim2
 using Parameters		##### For @unpack.
 using Mparams				##### For params.
 using Mgrids				##### For grids.
+using Mfuncs				##### For util.
+using Msolvesim			##### For solveEE.
 ##### Specify names to be exported.
 export
 getopt2
