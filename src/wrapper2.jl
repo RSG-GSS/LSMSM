@@ -3,12 +3,14 @@
 ##### Position: Research Analytics Associate.                                            
 ##### Organization: Federal Reserve Bank of New York.
 ##########################################################################   
-##### 10/12/2017: Modified.
+##### 10/16/2017: Modified.
 ##### 10/12/2017: Previously modified.
 ##### 10/12/2017: Created.
 ##### Description: 
 ##### 	- Define wrapper for getopt2() and parallel version of main routine.
 ##### Modifications:
+#####	10/16/2017:
+#####		- Add pmap with and without batch.
 ##########################################################################
 
 ##### Wrapper for getopt2().
@@ -24,7 +26,7 @@ function getopt2wrapper(sim,rep,i,a,rvw,rvu,lEDU,lEV,fp,p0,gr)
 end
 
 ##### Parallel version of main routine.
-function objectivefuncp(initp0::Array{Float64,1},fp::fparams,moments::structureM)
+function objectivefuncp(initp0::Array{Float64,1},fp::fparams,moments::structureM,partype::String)
     sd = 2230
     srand(sd)  
     p0 = pv2p0(initp0)
@@ -59,13 +61,43 @@ function objectivefuncp(initp0::Array{Float64,1},fp::fparams,moments::structureM
 
     #Simulation starts here
 		println("Sim start")
-    for rep = 1:fp.nsim
-        
+		##### Execute if "parfor" specified.
+		if partype=="parfor"
+			##### Display prompt.
+			println("Executing parfor on ",nworkers()," workers");
+			##### Loop through number of simulations.
+			for rep = 1:fp.nsim
+				##### Parallelize using @parallel.
 				sim[:,rep]=@sync @parallel (vcat) for i = 1:fp.nind
 				getopt2wrapper(sim,rep,i,a,rvw,rvu,lEDU,lEV,fp,p0,gr)
 				end
-				
-    end    
+			end   
+		##### Execute if "pmap" specified.
+		elseif partype=="pmap"
+			##### Display prompt.
+			println("Executing pmap on ",nworkers()," workers");
+			##### Loop through number of simulations.
+			for rep = 1:fp.nsim
+				##### Generate collections of input arguments.
+				inputs=[[sim,rep,i,a,rvw,rvu,lEDU,lEV,fp,p0,gr] for i = 1:fp.nind];
+				##### Parallelize using pmap without batching.
+				sim[:,rep]=pmap((args)->getopt2wrapper(args...),inputs)
+			end			
+		##### Execute if "pmapbatch" specified.
+		elseif partype=="pmapbatch"
+			##### Calculate batch size.
+			batchsize=ceil(Int,fp.nind/nworkers());
+			##### Display prompt.
+			println("Executing pmap on ",nworkers(),
+			" workers with batch size of ",batchsize);
+			##### Loop through number of simulations.
+			for rep = 1:fp.nsim
+				##### Generate collections of input arguments.
+				inputs=[[sim,rep,i,a,rvw,rvu,lEDU,lEV,fp,p0,gr] for i = 1:fp.nind];
+				##### Parallelize using pmap batch.
+				sim[:,rep]=pmap((args)->getopt2wrapper(args...),inputs,batch_size=batchsize)
+			end
+		end	
     println("Sim end")
 		
 		#=
