@@ -3,18 +3,20 @@
 ##### Position: Research Analytics Associate.                                            
 ##### Organization: Federal Reserve Bank of New York.
 ##########################################################################   
-##### 10/16/2017: Modified.
-##### 10/12/2017: Previously modified.
+##### 10/18/2017: Modified.
+##### 10/16/2017: Previously modified.
 ##### 10/12/2017: Created.
 ##### Description: 
 ##### 	- Define wrapper for getopt2() and parallel version of main routine.
 ##### Modifications:
 #####	10/16/2017:
 #####		- Add pmap with and without batch.
+#####	10/18/2017:
+#####		- Fix parallel implementations (remove temp variable "a").
 ##########################################################################
 
 ##### Wrapper for getopt2().
-function getopt2wrapper(sim,rep,i,a,rvw,rvu,lEDU,lEV,fp,p0,gr)
+function getopt2wrapper(sim,rep,i,rvw,rvu,lEDU,lEV,fp,p0,gr)
 	irvw, irvu = ilocate(i, rep, rvw, rvu, fp)
 	for ai = 1:fp.nper
 		a = ai-1+fp.mina
@@ -69,7 +71,7 @@ function objectivefuncp(initp0::Array{Float64,1},fp::fparams,moments::structureM
 			for rep = 1:fp.nsim
 				##### Parallelize using @parallel.
 				sim[:,rep]=@sync @parallel (vcat) for i = 1:fp.nind
-				getopt2wrapper(sim,rep,i,a,rvw,rvu,lEDU,lEV,fp,p0,gr)
+				getopt2wrapper(sim,rep,i,rvw,rvu,lEDU,lEV,fp,p0,gr)
 				end
 			end   
 		##### Execute if "pmap" specified.
@@ -79,7 +81,7 @@ function objectivefuncp(initp0::Array{Float64,1},fp::fparams,moments::structureM
 			##### Loop through number of simulations.
 			for rep = 1:fp.nsim
 				##### Generate collections of input arguments.
-				inputs=[[sim,rep,i,a,rvw,rvu,lEDU,lEV,fp,p0,gr] for i = 1:fp.nind];
+				inputs=[[sim,rep,i,rvw,rvu,lEDU,lEV,fp,p0,gr] for i = 1:fp.nind];
 				##### Parallelize using pmap without batching.
 				sim[:,rep]=pmap((args)->getopt2wrapper(args...),inputs)
 			end			
@@ -93,7 +95,7 @@ function objectivefuncp(initp0::Array{Float64,1},fp::fparams,moments::structureM
 			##### Loop through number of simulations.
 			for rep = 1:fp.nsim
 				##### Generate collections of input arguments.
-				inputs=[[sim,rep,i,a,rvw,rvu,lEDU,lEV,fp,p0,gr] for i = 1:fp.nind];
+				inputs=[[sim,rep,i,rvw,rvu,lEDU,lEV,fp,p0,gr] for i = 1:fp.nind];
 				##### Parallelize using pmap batch.
 				sim[:,rep]=pmap((args)->getopt2wrapper(args...),inputs,batch_size=batchsize)
 			end
