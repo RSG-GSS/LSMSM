@@ -1,28 +1,69 @@
 #import packages, functions, etc. - only uncomment for the first run
-include("setup.jl")
+#parallel = "Y-bank"
+#parallel = "Y-off"
+parallel = "N"
+version = 1
+gender = "f"
+
+
+if parallel == "Y-bank"
+	using ClusterManagers
+	myprocs = addprocs_sge(40, queue = "background.q")
+	@everywhere include("setup.jl")
+elseif parallel == "Y-off"
+	using ClusterManagers
+	#myprocs = addprocs_sge(4)
+	@everywhere include("setup.jl")
+else
+	include("setup.jl")
+end
 
 #initialize the fixed parameters
-fp = fparams()
+fp = fparams(version,gender)
 #initialize the data type that will contain the moments and related information
-moments = initmom(fp)
+moments = initmom(fp,version,gender)
 #initial parameter guess
-initp0 = [49.38 ,    
-    -27.699581,
-     1.450677,
-     5.66352,  
-     0.67565,  
-    -0.658497, 
-  	15.8,      
-     1.78912,
-     0.529738, 
-    -1.62237,
-    46.997]
+initp0 = 0.1*ones(51)
 
 #calculating the data moments and the bootstrapped weight matrix for the moments
-CalcDataBootMom!(fp,moments)
-#println("starting to solve and simulate")
+#CalcDataBootMom!(fp,moments)
+println("starting to solve and simulate")
+
+#=Random number draws for wage,hours disuility,take-up disutility, measurement error in wages, 
+measurement error in assets, prob of moving, childcare cost, child transition, type prob=#
+sd = 2230
+srand(sd)
+d = Uniform()
+#this is for the wage shock and the measurement error in wage
+draws = norminvcdf.(rand(d,fp.nind*fp.nper,fp.nsim,2)) 
+#now adding the random variables to simulate child transition
+draws = cat(3,draws, rand(d,fp.nind*fp.nper,fp.nsim))
+
+#loading the tax and transfer system information
+eitcDict = load("./dicts/eitcDict.jld")["data"]
+#taxDict = load("./dicts/taxDict.jld")["data"]
+ctcDict = load("./dicts/ctcDict.jld")["data"]
+stDict = load("./dicts/stDict.jld")["data"]
+ftDict = load("./dicts/ftDict.jld")["data"]
+#ftaxp = ftaxparam()
+#ctcp = ctcparam()
+fgr = fgrids(fp)
+lEV, lEDU = initEVEDU(fp)
+lEVr, lEDUr = initEVrEDUr(fp)
+sim = initsim(fp,gender)
+ccp = initccp(fp,gender)
+
+
 #calculating the value of the objective function (the weighted sum of squares of the difference in data and simulated moments)
-@time obj = objectivefunc!(initp0,fp,moments)
+obj = objectivefunc!(initp0,fp,moments, draws, lEV, lEDU, lEVr, lEDUr,eitcDict,fgr,sim,ftDict,ctcDict,stDict,ccp,version, gender)
+@time obj = objectivefunc!(initp0,fp,moments, draws, lEV, lEDU, lEVr, lEDUr, eitcDict,fgr,sim,ftDict,ctcDict,stDict,ccp,version,gender)
+#@profile obj = objectivefunc!(initp0,fp,moments, draws, lEV, lEDU, eitcDict,fgr,sim,ftDict,ctcDict,stDict)
+
 #this line is for optimization
-#res = optimize(p -> objectivefunc!(p,fp,moments),initp0,NelderMead(),Optim.Options(show_trace = true))
-#save("./optresults.jld", "res", res, "p0", initp0, "moments", moments)
+#res = optimize(p -> objectivefunc!(p,initp0,fp,moments, draws, lEV, lEDU, eitcDict,fgr,sim,ftDict,ctcDict,stDict),initp0,NelderMead(),Optim.Options(show_trace = true,store_trace = true))
+
+save("./sample_results.jld", "lEV", lEV, "lEDU", lEDU, "sim", sim, "moments", moments)
+
+if parallel == "Y-bank"
+	rmprocs(myprocs)
+end
