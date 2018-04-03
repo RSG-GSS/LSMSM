@@ -196,8 +196,8 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
     if version == 1
         #take-up
         for ch = 1:3
-            x1 = count(x->(x==2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]==1) #those who participate in the EITC
-            x2 = count(x->(x!=2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]==1) #those who don't participate        
+            x1 = count(x->(x==2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]>1 && sim[i].aa.Oh.ch[a]==ch) #those who participate in the EITC
+            x2 = count(x->(x!=2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]>1 && sim[i].aa.Oh.ch[a]==ch) #those who don't participate        
             f+=1
             moments.simmom[f] = x1/(x1+x2)            
         end
@@ -218,8 +218,8 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
         end
         #take-up
         for ch = 1:3
-            x1 = count(x->(x==2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]==1) #those who participate in the EITC
-            x2 = count(x->(x!=2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]==1) #those who don't participate
+            x1 = count(x->(x==2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]>1 && sim[i].aa.Oh.ch[a]==ch) #those who participate in the EITC
+            x2 = count(x->(x!=2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]>1 && sim[i].aa.Oh.ch[a]==ch) #those who don't participate
             f+=1
             moments.simmom[f] = x1/(x1+x2)            
         end
@@ -254,8 +254,8 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
         end
         #take-up
         for ch = 1:3
-            x1 = count(x->(x==2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]==1) #those who participate in the EITC
-            x2 = count(x->(x!=2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]==1) #those who don't participate
+            x1 = count(x->(x==2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]>1 && sim[i].aa.Oh.ch[a]==ch) #those who participate in the EITC
+            x2 = count(x->(x!=2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]>1 && sim[i].aa.Oh.ch[a]==ch) #those who don't participate
             f+=1
             moments.simmom[f] = x1/(x1+x2)            
         end
