@@ -56,13 +56,13 @@ ccp = initccp(fp,gender)
 
 #calculating the value of the objective function (the weighted sum of squares of the difference in data and simulated moments)
 obj = objectivefunc!(initp0,fp,moments, draws, lEV, lEDU, lEVr, lEDUr,eitcDict,fgr,sim,ftDict,ctcDict,stDict,ccp,version, gender)
-@time obj = objectivefunc!(initp0,fp,moments, draws, lEV, lEDU, lEVr, lEDUr, eitcDict,fgr,sim,ftDict,ctcDict,stDict,ccp,version,gender)
+#@time obj = objectivefunc!(initp0,fp,moments, draws, lEV, lEDU, lEVr, lEDUr, eitcDict,fgr,sim,ftDict,ctcDict,stDict,ccp,version,gender)
 #@profile obj = objectivefunc!(initp0,fp,moments, draws, lEV, lEDU, eitcDict,fgr,sim,ftDict,ctcDict,stDict)
 
 #this line is for optimization
 #res = optimize(p -> objectivefunc!(p,initp0,fp,moments, draws, lEV, lEDU, eitcDict,fgr,sim,ftDict,ctcDict,stDict),initp0,NelderMead(),Optim.Options(show_trace = true,store_trace = true))
 
-save("./sample_results.jld", "lEV", lEV, "lEDU", lEDU, "sim", sim, "moments", moments)
+save("./sample_results.jld", "lEV", lEV, "lEDU", lEDU, "sim", sim, "moments", moments, "obj", obj)
 
 if parallel == "Y-bank"
 	rmprocs(myprocs)

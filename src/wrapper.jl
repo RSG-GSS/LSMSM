@@ -1,5 +1,5 @@
 @views function objectivefunc!(initp0::Array{Float64,1},fp::fparams,moments::structureM,draws::Array{Float64,3},
-					lEV::Array{single_1,3}, lEDU::Array{single_1,3}, lEVr::Array{Float64,3}, lEDUr::Array{Float64,3},
+					lEV::Array{single_1,2}, lEDU::Array{single_1,2}, lEVr::Array{Float64,3}, lEDUr::Array{Float64,3},
                     eitcDict::datadict, fgr::fgrids,
                     sim::Array{sim_t,2},ftaxp::datadict5,ctcp::datadict3,staxp::datadict4,ccp::Array{Float64,3},version::Int,gender::String)
     @unpack icEmtx = fgr
@@ -24,7 +24,7 @@
 end
 
 
-function SolveSimAndCalcMom!(lEDU::Array{single_1,3},lEV::Array{single_1,3},lEDUr::Array{Float64,3},lEVr::Array{Float64,3},
+function SolveSimAndCalcMom!(lEDU::Array{single_1,2},lEV::Array{single_1,2},lEDUr::Array{Float64,3},lEVr::Array{Float64,3},
                                 sim::Array{sim_t,2},moments::structureM,fp::fparams,
                                 p0::params,dp::dparams,eitcDict::datadict,fgr::fgrids,finaln::Array{Float64,1},ftaxp::datadict5,
                                 ctcp::datadict3,staxp::datadict4,sh::shocks,ccp::Array{Float64,3},version::Int,gender::String)
@@ -36,8 +36,8 @@ end
 
 
 function simwrapper(isx:: Int, sim::Array{sim_t,2},fp::fparams,sh::shocks,dp::dparams,eitcDict::datadict,
-                        fgr::fgrids, policy::Int, ftaxp::datadict5, ctcp::datadict3, staxp::datadict4,lEV::Array{single_1,3},
-                        lEDU::Array{single_1,3},lEVr::Array{Float64,3},lEDUr::Array{Float64,3},ccp::Array{Float64,3}, p0::params)
+                        fgr::fgrids, policy::Int, ftaxp::datadict5, ctcp::datadict3, staxp::datadict4,lEV::Array{single_1,2},
+                        lEDU::Array{single_1,2},lEVr::Array{Float64,3},lEDUr::Array{Float64,3},ccp::Array{Float64,3}, p0::params)
     @unpack isEmtx = fgr
     @unpack mina, maxa = fp
     
@@ -66,7 +66,7 @@ end
 
 
 
-function SolveAndSim_manySys!(lEDU::Array{single_1,3},lEV::Array{single_1,3},lEDUr::Array{Float64,3},lEVr::Array{Float64,3},
+function SolveAndSim_manySys!(lEDU::Array{single_1,2},lEV::Array{single_1,2},lEDUr::Array{Float64,3},lEVr::Array{Float64,3},
                                 sim::Array{sim_t,2},fp::fparams,
                                 p0::params,dp::dparams,eitcDict::datadict,fgr::fgrids,finaln::Array{Float64,1},ftaxp::datadict5,
                                 ctcp::datadict3,staxp::datadict4,sh::shocks,ccp::Array{Float64,3})

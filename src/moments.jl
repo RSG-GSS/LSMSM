@@ -67,7 +67,7 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
         moments.simmom[f] = cor(a,b)
     end
 
-    println("f1 $(f)")
+    #println("f1 $(f)")
     #State-level moments    
     #moments 36-115
     #for men, also drop minnesota for year<=1986
@@ -107,7 +107,7 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
         end
     end
 
-    println("f2 $(f)")
+    #println("f2 $(f)")
     #WAGES
     aget = [1:30-mina+1, 30-mina+2:40-mina, 40-mina+1:50-mina, 50-mina+1:nper, 1:nper]
     aget2 = [31-mina, 41-mina-32+mina, 51-mina-41+mina, nper+1-51+mina, nper]
@@ -180,7 +180,7 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
     else
         moments.simmom[f] = cor(a,b)
     end
-    println("f4 $(f)")
+    #println("f4 $(f)")
     #moments with experience quantiles
     #pteq = [0 0 0 1; 1 1 1 4; 2 3 3 5; 6 5 6 7]
     fteq = [0 1 3 4; 1 7 8 9; 13 17 15 18; 26 25 23 24]
@@ -192,7 +192,7 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
                 sim[i].aa.Oh.fte[a]<=fteq[q,s]],:,1))))
         end
     end
-    println("f5 $(f)")
+    #println("f5 $(f)")
     if version == 1
         #take-up
         for ch = 1:3
@@ -255,7 +255,7 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
         #take-up
         for ch = 1:3
             x1 = count(x->(x==2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]>1 && sim[i].aa.Oh.ch[a]==ch) #those who participate in the EITC
-            x2 = count(x->(x!=2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]>1 && sim[i].aa.Oh.ch[a]==ch) #those who don't participate
+            x2 = count(x->(x!=2), sim[i].aa.Ch.p[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1 && sim[i].aa.Ch.l[a]>1 ) #those who don't participate
             f+=1
             moments.simmom[f] = x1/(x1+x2)            
         end

@@ -65,7 +65,7 @@ end
     end
 end
 
-function solve!(lEDU::Array{single_1,3},lEV::Array{single_1,3},lEDUr::Array{Float64,3},lEVr::Array{Float64,3},
+function solve!(lEDU::Array{single_1,2},lEV::Array{single_1,2},lEDUr::Array{Float64,3},lEVr::Array{Float64,3},
                 fp::fparams,p0::params,dp::dparams,
                 eitcDict::datadict,fgr::fgrids,policy::Int,finaln::Array{Float64,1},ftaxp::datadict5,
                 ctcp::datadict3,staxp::datadict4,ccp::Array{Float64,3})
@@ -76,18 +76,20 @@ function solve!(lEDU::Array{single_1,3},lEV::Array{single_1,3},lEDUr::Array{Floa
         solveR!(lEDUr,lEVr,fp,p0,dp,fgr,s,policy)
     end
 
-    #for s=1:fp.nts, sti = 1:fp.nstate, l1 = 1:fp.ngpl1, cri = 1:fp.ngpeitc
-
+    
     ##FIRST PART TO PARALLELIZE: SOLUTION
-    #@sync @parallel (vcat) for icx = 1:
+    #@sync @parallel (vcat) for icx = 1:totcti
     for icx = 1:fp.totcti    
         s = icEmtx.s[icx]
         sti = icEmtx.st[icx]
-        l1 = icEmtx.l1[icx]
-        cri = icEmtx.cr[icx]
-        for ai = fp.nper:(-1):fp.as[s] - fp.mina+1, fei = 1:fgr.ngpe[ai]#, pei = 1:fgr.ngpe[ai]
-            for ki = 1:fp.ngpk                
-                lEDU[:], lEV[:] = solveWL!(lEDU,lEV,lEDUr,lEVr,sti,s,l1,cri,ai,fei,ki,fp,p0,dp,eitcDict,fgr,policy,finaln,ftaxp,ctcp,staxp,ccp)
+        #l1 = icEmtx.l1[icx]
+        #cri = icEmtx.cr[icx]
+        for l1 = 1:fp.ngpl1, cri = 1:fp.ngpeitc
+        	for ai = fp.nper:(-1):fp.as[s] - fp.mina+1, fei = 1:fgr.ngpe[ai]#, pei = 1:fgr.ngpe[ai]
+            	for ki = 1:fp.ngpk                
+            		#println("1 ai $(ai)")
+                	lEDU[sti,s].m0, lEV[sti,s].m0= solveWL!(lEDU[sti,s].m0,lEV[sti,s].m0,lEDUr,lEVr,sti,s,l1,cri,ai,fei,ki,fp,p0,dp,eitcDict,fgr,policy,finaln,ftaxp,ctcp,staxp,ccp)
+                end
             end
         end
     end
@@ -112,6 +114,7 @@ function solveR!(lEDUr::Array{Float64,3},lEVr::Array{Float64,3},fp::fparams,p0::
             for ki = 1:ngpk                       
                 if a == enda                
                     c = max(R*gk[ki],minc[policy,ch])
+                    #println("c $(c)","minc $(minc[policy,ch])", "Rgk $(R*gk[ki])")
                     v[ch] = util(c, θ, utilpar[s,ch,1,1])
                     du[ch] = dudc(c,θ,dutilpar[s,ch,1,1])               
                 else                
@@ -136,7 +139,7 @@ end
 
 
 
-function solveWL!(lEDU::Array{single_1,3},lEV::Array{single_1,3},lEDUr::Array{Float64,3},lEVr::Array{Float64,3},
+function solveWL!(lEDU::Array{Float64,5},lEV::Array{Float64,5},lEDUr::Array{Float64,3},lEVr::Array{Float64,3},
                             sti::Int,s::Int,l1::Int,cri::Int,
                             ai::Int,fei::Int,ki::Int,fp::fparams,p0::params,dp::dparams,eitcDict::datadict,
                             fgr::fgrids,policy::Int,finaln::Array{Float64,1},ftaxp::datadict5,ctcp::datadict3,staxp::datadict4,ccp::Array{Float64,3})
@@ -173,9 +176,12 @@ function solveWL!(lEDU::Array{single_1,3},lEV::Array{single_1,3},lEDUr::Array{Fl
             #ix_1 = iEmtx.ix[ch,ai+1]       
             #plEDU = @view lEDU[sti,s,ix].m0[:,:,:,:]
             #plEV = @view lEV[sti,s,ix].m0[:,:,:,:]
-            cEDU[ch],cEV[ch] = get_cEmtr!(lEDU[ix,sti,s].m0,lEDU[ix,sti,s].m0,lEDUr[:,ch,s],lEVr[:,ch,s],y,fei,fe1val,fe1lbi,fe1ubi,ki,k,
+        	cEDU[ch],cEV[ch] = get_cEmtr!(lEDU[:,:,:,:,ix],lEV[:,:,:,:,ix],y,fei,fe1val,fe1lbi,fe1ubi,ki,k,
                                     l1,cri,cr,cr1,cr1lb,cr1ub,cc[:,ch],tt,fp,p0,dp,ge[:,ai],geitc,gk,s,ch,ai,policy)
-        end
+        else        	        
+        	cEDU[ch],cEV[ch] = get_cEmtr!(lEDUr[:,ch,s],lEVr[:,ch,s],y,ki,k,
+                                    l1,cri,cr,cc[:,ch],tt,fp,p0,dp,ge[:,ai],gk,s,ch,ai,policy)
+        end        
     end
 
     #integrate family
@@ -185,7 +191,7 @@ function solveWL!(lEDU::Array{single_1,3},lEV::Array{single_1,3},lEDUr::Array{Fl
     #calcEinv
     for ch = 1:ngpch
         ix = iEmtx.ix[ch,ai]
-        lEDU[ix,sti,s].m0[ki,fei,cri,l1], lEV[ix,sti,s].m0[ki,fei,cri,l1] = calcEinv!(uEDU[ch],uEV[ch],fp)
+        lEDU[ki,fei,cri,l1,ix], lEV[ki,fei,cri,l1,ix] = calcEinv!(uEDU[ch],uEV[ch],fp)
     end
     #println("lEV $(lEV)")
     return lEDU, lEV
@@ -193,7 +199,7 @@ end
 
 
 #main routine to solve for the value functions
-function get_cEmtr!(plEDU::Array{Float64,4}, plEV::Array{Float64,4}, plEDUr::Array{Float64,1}, plEVr::Array{Float64,1},
+function get_cEmtr!(plEDU::Array{Float64,4}, plEV::Array{Float64,4},
                         y::Array{Float64,2},
                         fei::Int, fe1::SubArray{Int64,1,Array{Int64,3}},fe1lb::SubArray{Int64,1,Array{Int64,3}},
                         fe1ub::SubArray{Int64,1,Array{Int64,3}},
@@ -215,7 +221,7 @@ function get_cEmtr!(plEDU::Array{Float64,4}, plEV::Array{Float64,4}, plEDUr::Arr
     tempc = 0.
     tempdu = 0.
     
-
+    #println("ai $(ai)")
     if ai < nper      
         for pt = 1:ngpt                           
             for l = 1:ngpl
@@ -293,45 +299,10 @@ function get_cEmtr!(plEDU::Array{Float64,4}, plEV::Array{Float64,4}, plEDUr::Arr
                     end
                     c[l,pt] = tempc
                     v[l,pt] = tempv
-                    du[l,pt] = tempdu
+                    du[l,pt] = tempdu                    
                 end
             end
-        end        
-    else
-        for pt = 1:ngpt
-            for l = 1:ngpl
-                if l == 1                        
-                    resources = R*k + convert(Float64,pt-1)*cr - cc[l]
-                    for i = 1:ngpk
-                        eulerArr[i] = eepar[s,ch,l,pt]*lEDUr[i] - (resources - gk[i])
-                    end
-                    k1,lbk,ubk = solveEE(ngpk,eulerArr,gk,ki,boundk[ai,s])
-                    c[l,pt] = max(resources-k1,minc[policy,ch])
-                    v[l,pt] = util(c[l,pt], θ, utilpar[s,ch,l,pt]) + β*calcEVinvinv(LinInterp1d(k1,gk[lbk],gk[ubk],
-                        lEVr[lbk],lEVr[ubk]))
-                    du[l,pt] = dudc(c[l,pt],θ,dutilpar[s,ch,l,pt])
-                else
-                    tempc = 0.
-                    tempv = 0.
-                    tempdu = 0.
-                    for iv = 1:ngu
-                        resources = R*k+y[l,iv]*hrs[l] + convert(Float64,pt-1)*cr - cc[l] + tt[l,iv]    
-                        for i = 1:ngpk
-                            eulerArr[i] = eepar[s,ch,l,pt]*lEDUr[i] - (resources - gk[i])
-                        end
-                        k1,lbk,ubk = solveEE(ngpk,eulerArr,gk,ki,boundk[ai,s])
-                        civ = max(resources-k1,minc[policy,ch])
-                        tempc += (wgts[iv]*civ)
-                        tempv += (wgts[iv]*(util(civ, θ, utilpar[s,ch,l,pt])
-                            +β*calcEVinvinv(LinInterp1d(k1,gk[lbk],gk[ubk],lEVr[lbk],lEVr[ubk])))) 
-                        tempdu += (wgts[iv]*dudc(civ,θ,dutilpar[s,ch,l,pt])) 
-                    end                                     
-                    c[l,pt] = tempc
-                    v[l,pt] = tempv
-                    du[l,pt] = tempdu
-                end #if l == 1
-            end #l loop
-        end #pt loop
+        end            
     end #if ai<nper
     optV, act = findmax(v)
     optl,optpt = ind2sub(v,act)
@@ -339,6 +310,73 @@ function get_cEmtr!(plEDU::Array{Float64,4}, plEV::Array{Float64,4}, plEDUr::Arr
 
     return optDU, optV
 end
+
+
+#main routine to solve for the value functions
+function get_cEmtr!(plEDUr::Array{Float64,1}, plEVr::Array{Float64,1},
+                        y::Array{Float64,2},                        
+                        ki::Int64,k::Float64,l1::Int64,cri::Int64,cr::Float64,
+                        cc::Array{Float64,1},tt::Array{Float64,2},fp::fparams, p0::params, dp::dparams,ge::Array{Int64,1},
+                        gk::Array{Float64,1},s::Int64,ch::Int64,ai::Int64,policy::Int)
+    @unpack β, R, θ, ngpk, ngu, ngpl, nper, ngpch, ngpeitc, ngpt, wgts, hrs, minc = fp
+    @unpack boundk, eepar, utilpar, dutilpar = dp    
+    #@unpack ge, geitc, gk = fgr
+
+    
+    c = zeros(Float64,ngpl,ngpt)
+    v = zeros(Float64,ngpl,ngpt)
+    du = zeros(Float64,ngpl,ngpt)
+    eulerArr = zeros(Float64,ngpk)      
+    optV = 0.
+    optDU = 0.
+    tempv = 0.
+    tempc = 0.
+    tempdu = 0.
+    
+    #println("ai $(ai)")
+    for pt = 1:ngpt
+        for l = 1:ngpl
+            if l == 1                        
+                resources = R*k + convert(Float64,pt-1)*cr - cc[l]
+                for i = 1:ngpk
+                    eulerArr[i] = eepar[s,ch,l,pt]*lEDUr[i] - (resources - gk[i])
+                end
+                k1,lbk,ubk = solveEE(ngpk,eulerArr,gk,ki,boundk[ai,s])
+                c[l,pt] = max(resources-k1,minc[policy,ch])
+                v[l,pt] = (util(c[l,pt], θ, utilpar[s,ch,l,pt]) + β*calcEVinvinv(LinInterp1d(k1,gk[lbk],gk[ubk],
+                    lEVr[lbk],lEVr[ubk]),fp))
+                du[l,pt] = dudc(c[l,pt],θ,dutilpar[s,ch,l,pt])
+                #println("3 c $(c[l,pt])","v $(v[l,pt])","du $(du[l,pt])")
+            else
+                tempc = 0.
+                tempv = 0.
+                tempdu = 0.
+                for iv = 1:ngu
+                    resources = R*k+y[l,iv]*hrs[l] + convert(Float64,pt-1)*cr - cc[l] + tt[l,iv]    
+                    for i = 1:ngpk
+                        eulerArr[i] = eepar[s,ch,l,pt]*lEDUr[i] - (resources - gk[i])
+                    end
+                    k1,lbk,ubk = solveEE(ngpk,eulerArr,gk,ki,boundk[ai,s])
+                    civ = max(resources-k1,minc[policy,ch])
+                    tempc += (wgts[iv]*civ)
+                    tempv += (wgts[iv]*(util(civ, θ, utilpar[s,ch,l,pt])
+                        +β*calcEVinvinv(LinInterp1d(k1,gk[lbk],gk[ubk],lEVr[lbk],lEVr[ubk]),fp))) 
+                    tempdu += (wgts[iv]*dudc(civ,θ,dutilpar[s,ch,l,pt])) 
+                end                                     
+                c[l,pt] = tempc
+                v[l,pt] = tempv
+                du[l,pt] = tempdu
+                #println("4 c $(c[l,pt])","v $(v[l,pt])","du $(du[l,pt])")
+            end #if l == 1
+        end #l loop
+    end #pt loop    
+    optV, act = findmax(v)
+    optl,optpt = ind2sub(v,act)
+    optDU = du[act]    
+
+    return optDU, optV
+end
+
 
 function integrate_family(cEDU::Array{Float64,1},cEV::Array{Float64,1},ngpch::Int64, trkids::SubArray{Float64,2,Array{Float64,4}})
     uEV = zeros(Float64,ngpch)
@@ -359,8 +397,8 @@ end
                   
 function sim_a0toa1!(sim::OhCh_t,age0::Int,age1::Int,ri::Int,s::Int,st::Int,fp::fparams,sh::shocks,dp::dparams,eitcDict::datadict,
                         fgr::fgrids, policy::Int, ftaxp::datadict5, ctcp::datadict3, staxp::datadict4,lb::Int,ub::Int,
-                        Arrirvw::Array{Float64,1},Arrirvmw::Array{Float64,1},Arrirvch::Array{Float64,1},lEV::Array{single_1,3},
-                        lEDU::Array{single_1,3},lEVr::Array{Float64,3},lEDUr::Array{Float64,3},ccp::Array{Float64,3}, p0::params)
+                        Arrirvw::Array{Float64,1},Arrirvmw::Array{Float64,1},Arrirvch::Array{Float64,1},lEV::Array{single_1,2},
+                        lEDU::Array{single_1,2},lEVr::Array{Float64,3},lEDUr::Array{Float64,3},ccp::Array{Float64,3}, p0::params)
     @unpack as, mina = fp
     @unpack iEmtx = fgr
     #println("sim[1].Oh.ch  1 $(sim.Oh.ch[:])")
@@ -375,7 +413,7 @@ function sim_a0toa1!(sim::OhCh_t,age0::Int,age1::Int,ri::Int,s::Int,st::Int,fp::
         #    println("a $(a)"," s $(s)"," policy $(policy)")
         #end
         ix = iEmtx.ix[ch,ai]
-        sim = getopt!(sim, s, st, ai, irvw, irvmw, irvch, lEDU[ix,st,s].m0, lEV[ix,st,s].m0, lEDUr[:,:,s], lEVr[:,:,s],fp, p0, dp,eitcDict, fgr, policy, ftaxp, ctcp, staxp, ccp)
+        sim = getopt!(sim, s, st, ai, irvw, irvmw, irvch, lEDU[st,s].m0[:,:,:,:,ix], lEV[st,s].m0[:,:,:,:,ix], lEDUr[:,:,s], lEVr[:,:,s],fp, p0, dp,eitcDict, fgr, policy, ftaxp, ctcp, staxp, ccp)
     end
     #println("sim[1].Oh.ch  3 $(sim.Oh.ch[:])")
     return sim

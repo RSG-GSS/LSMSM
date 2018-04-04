@@ -157,7 +157,7 @@ function fparams(version::Int, gender::String)
     end
     fp0.nboot   = 5           #number of bootstrap iterations
     fp0.toti 	= fp0.ngpch*fp0.nper
-    fp0.totcti  = fp0.nts*fp0.nstate*(fp0.ngpl1-1)*fp0.ngpeitc + fp0.nts*fp0.nstate#*fp0.ntype
+    fp0.totcti  = fp0.nts*fp0.nstate #*(fp0.ngpl1-1)*fp0.ngpeitc + fp0.nts*fp0.nstate#*fp0.ntype
     fp0.totsi   = fp0.nsim*fp0.nind
     fp0.maxeitc = 5.
     fp0.eqs = [1.,1.3,1.6] 		#equivalence scale based on the number of kids    
@@ -165,7 +165,7 @@ function fparams(version::Int, gender::String)
     fp0.wgts = π1_2.*[0.0199532,0.393619,0.945309,0.393619,0.0199532] 
     fp0.nds = [-2.02018,-0.958572,2.40258e-16,0.958572,2.02018]
     fp0.hrs = [0.,755.,1520.,2020.,2720.]
-    fp0.minc = 0.12*[243.76015   585.52734375    1030.68603515625;
+    fp0.minc =  0.12*[243.76015   585.52734375    1030.68603515625;
                 278.58475   601.12744140625 1058.146484375;
                 122.40231   657.0127437770584   870.8584483816646;
                 149.3828    739.7640067152337   990.3343786042017]
@@ -176,7 +176,7 @@ end
 #composite type to hold the expected value arrays. 
 #This structure is useful in case we have a distinction between married and single individuals in a model. 
 type single_1
-    m0 :: Array{Float64,4}
+    m0 :: Array{Float64,5}
 end
 
 type index
@@ -186,12 +186,12 @@ type index
 end
 
 type ctindex
-    ix::Array{Int,4}
+    ix::Array{Int,2}
     #ty::Array{Int,1}
     st::Array{Int,1}
     s::Array{Int,1}
-    l1::Array{Int,1}
-    cr::Array{Int,1}
+    #l1::Array{Int,1}
+    #cr::Array{Int,1}
     #r::Array{Int,1}    
 end
 
@@ -333,8 +333,8 @@ function initindex(fp::fparams)
 end
 
 function initctindex(fp::fparams)
-    @unpack totcti, nstate, nts, ngpl1, ngpeitc = fp
-    icEmtx =ctindex(zeros(Int,nstate,nts,ngpl1,ngpeitc),zeros(Int,totcti),zeros(Int,totcti),zeros(Int,totcti),zeros(Int,totcti))
+    @unpack totcti, nstate, nts = fp
+    icEmtx =ctindex(zeros(Int,nstate,nts),zeros(Int,totcti),zeros(Int,totcti))
     return icEmtx
 end
 
@@ -348,7 +348,7 @@ end
 function fgrids(fp::fparams)
     @unpack nper, ntype, nstate, totcti, maxngpe, ngpk, ngpeitc, nts, ngpch, toti,wgts, ngpl, ngpl1, nsim, nind, totsi = fp
 	fgr0 =(fgrids(zeros(Int,nper),zeros(Int64,maxngpe,nper),zeros(Float64,ngpeitc),zeros(Float64,ngpk),index(zeros(Int,ngpch,nper),zeros(Int,toti),zeros(Int,toti)),
-    ctindex(zeros(Int,nstate,nts,ngpl1,ngpeitc),zeros(Int,totcti),zeros(Int,totcti),zeros(Int,totcti),zeros(Int,totcti)),
+    ctindex(zeros(Int,nstate,nts),zeros(Int,totcti),zeros(Int,totcti)),
     simindex(zeros(Int,nsim,nind),zeros(Int,totsi),zeros(Int,totsi)),
     zeros(Float64,nper,nts,ngpch,ngpch),zeros(Int64,ngpl,maxngpe,nper),zeros(Int64,ngpl,maxngpe,nper),zeros(Int64,ngpl,maxngpe,nper)))
 	fgr0.ngpe, fgr0.ge = popge(fp)
@@ -372,10 +372,10 @@ end
 #initializing the expected value function array and the derivative of expected utility array (necessary for the Euler Equation)
 function initEVEDU(fp::fparams)
     @unpack toti, ngpl1, ngpk, maxngpe, ngpeitc, nstate, nts= fp
-    lEV = Array{single_1}(toti,nstate,nts)
-    lEDU = Array{single_1}(toti,nstate,nts) 
-    lEV .= single_1(zeros(Float64,ngpk,maxngpe,ngpeitc,ngpl1))
-    lEDU .= single_1(zeros(Float64,ngpk,maxngpe,ngpeitc,ngpl1))
+    lEV = Array{single_1}(nstate,nts)
+    lEDU = Array{single_1}(nstate,nts) 
+    lEV .= single_1(zeros(Float64,ngpk,maxngpe,ngpeitc,ngpl1,toti))
+    lEDU .= single_1(zeros(Float64,ngpk,maxngpe,ngpeitc,ngpl1,toti))
     return lEV, lEDU
 end
 

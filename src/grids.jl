@@ -356,11 +356,25 @@ function pop_sEmtx(fp::fparams)
 end
 
 function pop_cEmtx(fp::fparams)
-    @unpack totcti, nstate, nts,ngpl1,ngpeitc = fp
+    @unpack totcti, nstate, nts= fp
     icEmtx = initctindex(fp)   
     ix = 0
-    @inbounds for s =1:nts, sti = 1:nstate, l1 = 1:ngpl1
-        if l1 == 1
+    @inbounds for s =1:nts, sti = 1:nstate #, l1 = 1:ngpl1
+    	ix = ix + 1
+    	icEmtx.ix[sti,s] = ix
+    	icEmtx.st[ix] = sti
+    	icEmtx.s[ix] = s
+    end
+    return icEmtx
+end
+
+
+
+
+
+
+
+        #=if l1 == 1
             cri = 1
             ix = ix + 1
             icEmtx.ix[sti,s] = ix
@@ -381,8 +395,5 @@ function pop_cEmtx(fp::fparams)
                 icEmtx.l1[ix] = l1
                 icEmtx.cr[ix] = cri
             end
-        end
-    end
-    return icEmtx
-end
+        end =#
 
