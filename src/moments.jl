@@ -28,7 +28,7 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
             moments.simmom[f] = x1/(x1+x2)
         end
     end
-    println("f0 $(f)")
+    #println("f0 $(f)")
     #Employment Transitions
     #moments 33-35
     x1 = 0
@@ -143,7 +143,7 @@ function CalcSimMom!(sim::Array{sim_t,2},fp::fparams, moments::structureM,versio
         f += 1
         moments.simmom[f] = NaNMath.mean(vec(reshape([sim[i].aa.Oh.w[a] for a in 1:nper, i in eachindex(sim[ind]) if sim[i].aa.Oh.insample[a]==1],:,1)))
     end
-    println("f3 $(f)")
+    #println("f3 $(f)")
     #correlations between age and wage
     a = [sim[i].aa.Oh.w[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1]
     b = [sim[i].aa.Oh.a[a] for a in 1:nper, i in eachindex(sim) if sim[i].aa.Oh.insample[a]==1]
