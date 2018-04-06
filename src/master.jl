@@ -1,11 +1,28 @@
+##########################################################################   
+##### 04/06/2018: Modified by Hirotaka Miura.
+##### 04/05/2018: Previously modified by Hirotaka Miura.
+##### 04/04/2018: Created by Gizem Kosar.
+##### Description: 
+##### 	- Functions to solve simulation.
+##### Modifications:
+#####	04/05/2018: 
+#####		- Begin making adjustments for parallelization. 
+#####		- Not clear why, but certain variables need @everywhere
+#####			macro for code to run in parallel.
+#####	04/06/2018:
+#####		- Updated comments.
+##########################################################################
+
 #import packages, functions, etc. - only uncomment for the first run
 #parallel = "Y-bank"
 #parallel = "Y-off"
-parallel = "N"
-version = 1
-gender = "f"
+@everywhere parallel = "N"
+@everywhere version = 1
+@everywhere gender = "f"
 
+@everywhere include("setup.jl")
 
+#=
 if parallel == "Y-bank"
 	using ClusterManagers
 	myprocs = addprocs_sge(40, queue = "background.q")
@@ -17,9 +34,10 @@ elseif parallel == "Y-off"
 else
 	include("setup.jl")
 end
+=#
 
 #initialize the fixed parameters
-fp = fparams(version,gender)
+@everywhere fp = fparams(version,gender)
 #initialize the data type that will contain the moments and related information
 moments = initmom(fp,version,gender)
 #initial parameter guess
@@ -49,7 +67,7 @@ ftDict = load("./dicts/ftDict.jld")["data"]
 #ctcp = ctcparam()
 fgr = fgrids(fp)
 lEV, lEDU = initEVEDU(fp)
-lEVr, lEDUr = initEVrEDUr(fp)
+@everywhere lEVr, lEDUr = initEVrEDUr(fp)
 sim = initsim(fp,gender)
 ccp = initccp(fp,gender)
 

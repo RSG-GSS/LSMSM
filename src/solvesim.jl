@@ -1,3 +1,16 @@
+##########################################################################   
+##### 04/05/2018: Modified by Hirotaka Miura.
+##### 04/04/2018: Previously modified by Hirotaka Miura.
+##### 04/04/2018: Created by Gizem Kosar.
+##### Description: 
+##### 	- Functions to solve simulation.
+##### Modifications:
+#####	04/04/2018: 
+#####		- Begin making adjustments for parallelization. 
+#####	04/04/2018: 
+#####		- Continue development. 
+##########################################################################
+
 #solving the euler equation (for consumption)
 @views function solveEE(ngpk::Int, eulerArr::Array{Float64,1}, gk::Array{Float64,1},ki::Int, boundk::Float64) 
     if eulerArr[1]>0.
@@ -65,6 +78,44 @@ end
     end
 end
 
+##### Hirotaka Miura: Wrapper for parallelizing call to solveWL!() in solve!().
+function solveWLWrapper(
+	icx::Int,
+	lEDU::Array{single_1,2},
+	lEV::Array{single_1,2},
+	lEDUr::Array{Float64,3},
+	lEVr::Array{Float64,3},
+	fp::fparams,
+	p0::params,
+	dp::dparams,
+	eitcDict::datadict,
+	fgr::fgrids,
+	policy::Int,
+	finaln::Array{Float64,1},
+	ftaxp::datadict5,
+	ctcp::datadict3,
+	staxp::datadict4,
+	ccp::Array{Float64,3})
+	
+	@unpack icEmtx = fgr;
+	
+	s = icEmtx.s[icx];
+	sti = icEmtx.st[icx];
+
+	for l1 = 1:fp.ngpl1, cri = 1:fp.ngpeitc
+		for ai = fp.nper:(-1):fp.as[s] - fp.mina+1, fei = 1:fgr.ngpe[ai]#, pei = 1:fgr.ngpe[ai]
+				for ki = 1:fp.ngpk                
+					#println("1 ai $(ai)")
+						lEDU[sti,s].m0, lEV[sti,s].m0= solveWL!(lEDU[sti,s].m0,lEV[sti,s].m0,lEDUr,lEVr,sti,s,l1,cri,ai,fei,ki,fp,p0,dp,eitcDict,fgr,policy,finaln,ftaxp,ctcp,staxp,ccp)
+					end
+			end
+	end	
+	
+	return lEDU[sti,s].m0, lEV[sti,s].m0, sti, s
+	
+end
+	
+
 function solve!(lEDU::Array{single_1,2},lEV::Array{single_1,2},lEDUr::Array{Float64,3},lEVr::Array{Float64,3},
                 fp::fparams,p0::params,dp::dparams,
                 eitcDict::datadict,fgr::fgrids,policy::Int,finaln::Array{Float64,1},ftaxp::datadict5,
@@ -75,8 +126,30 @@ function solve!(lEDU::Array{single_1,2},lEV::Array{single_1,2},lEDUr::Array{Floa
     for s = 1:fp.nts
         solveR!(lEDUr,lEVr,fp,p0,dp,fgr,s,policy)
     end
+		
+		tic();
+		##### Display prompt.
+		println("Executing parfor on ",nworkers()," workers");
+		
+		#res1=Array{Array{Float64,5},1}(fp.totcti);
+		#res2=Array{Array{Float64,5},1}(fp.totcti);
+		##### Parallelize using @parallel.
+		res=@sync @parallel (vcat) for i = 1:fp.totcti
+			solveWLWrapper(i,lEDU,lEV,lEDUr,lEVr,fp,p0,dp,eitcDict,fgr,policy,finaln,ftaxp,ctcp,staxp,ccp)
+		end 
+		
+		for i=1:length(res)
+		
+			lEDU[res[i][3],res[i][4]].m0=res[i][1];
+			
+			lEV[res[i][3],res[i][4]].m0=res[i][2];
+			
+		end
 
-    
+		toc();
+		
+		#=
+    tic();
     ##FIRST PART TO PARALLELIZE: SOLUTION
     #@sync @parallel (vcat) for icx = 1:totcti
     for icx = 1:fp.totcti    
@@ -93,6 +166,9 @@ function solve!(lEDU::Array{single_1,2},lEV::Array{single_1,2},lEDUr::Array{Floa
             end
         end
     end
+		toc();
+		=#
+		
     return nothing
 end
 
