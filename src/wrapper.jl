@@ -15,7 +15,8 @@
     sh = initshocks(fp,p0,draws)
     dp = dparams(fp,p0,finaln)
     #initializing the simulation structure
-    sim = simClean!(sim,fp.nind,fp.nsim,fp.nper)    
+    sim = simClean!(sim,fp.nind,fp.nsim,fp.nper)  
+    lEV, lEDU = cleanEVEDU!(fp,lEV,lEDU)  
 
     SolveSimAndCalcMom!(lEDU,lEV,lEDUr,lEVr,sim,moments,fp,p0,dp,eitcDict,fgr,finaln,ftaxp,ctcp,staxp,sh,ccp,version,gender)
         
@@ -55,12 +56,12 @@ function simwrapper(isx:: Int, sim::Array{sim_t,2},fp::fparams,sh::shocks,dp::dp
     if age1 >= age0
         #println("i $(i)", "rep $(rep)", "age0 $(age0)"," age1 $(age1)"," yob $(sim[i,rep].yob)", " initial ch $(sim[i,rep].aa.Oh.ch[age0-mina+1])", " policy $(policy)")
         #println("$(sim[i,rep].aa.Oh.ch[:])")
-        sim[i,rep].aa = sim_a0toa1!(sim[i,rep].aa,age0,age1,ri,s,st,fp,sh,dp,eitcDict,fgr,policy,ftaxp,ctcp,staxp,lb,ub,irvw,irvmw,irvch,
+        sim[i,rep] = sim_a0toa1!(sim[i,rep],age0,age1,ri,s,st,fp,sh,dp,eitcDict,fgr,policy,ftaxp,ctcp,staxp,lb,ub,irvw,irvmw,irvch,
                     lEV,lEDU,lEVr,lEDUr,ccp,p0)            
     #println("sim[1].Oh.ch  4 $(sim[1,1].aa.Oh.ch[:])")              
     end
     #println("sim[1].Oh.ch  5 $(sim[1,1].aa.Oh.ch[:])")       
-    return sim       
+    return sim[i,rep]       
 end
     
 
@@ -78,17 +79,17 @@ function SolveAndSim_manySys!(lEDU::Array{single_1,2},lEV::Array{single_1,2},lED
 
     for policy = 1:fp.npolicy
         println("policy $(policy)")
-        #println("1 policy $(policy)","-- $(sim[1,1].aa.Oh.ch[:])")
+        #println("1 policy $(policy)","-- $(sim[1,1].aa.Oh.ch[:])")        
         solve!(lEDU,lEV,lEDUr,lEVr,fp,p0,dp,eitcDict,fgr,policy,finaln,ftaxp,ctcp,staxp,ccp)
-
         println("solution done")
         #println("2 policy $(policy)","-- $(sim[1,1].aa.Oh.ch[:])")
 
 
 		##SECOND PART TO PARALLELIZE: SIMULATION
         #sim[:] = @sync @parallel (vcat) for isx = 1:fp.totsi        
+        #simwrapper(isx,sim,fp,sh,dp,eitcDict,fgr,policy,ftaxp,ctcp,staxp,lEV,lEDU,lEVr,lEDUr,ccp,p0)        
         for isx = 1:fp.totsi
-            simwrapper(isx,sim,fp,sh,dp,eitcDict,fgr,policy,ftaxp,ctcp,staxp,lEV,lEDU,lEVr,lEDUr,ccp,p0)
+            sim[isx] = simwrapper(isx,sim,fp,sh,dp,eitcDict,fgr,policy,ftaxp,ctcp,staxp,lEV,lEDU,lEVr,lEDUr,ccp,p0)
        	end                        
     end
 

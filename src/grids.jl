@@ -50,8 +50,7 @@ function popge(fp::fparams)
         end
     end
     return ngpe, ge
-end    
-
+end
 
 
 function popgeitc(fp::fparams)
@@ -327,13 +326,13 @@ function pop_Emtx(fp::fparams)
 	@unpack toti, mina, nper, as, maxa, ngpch = fp
 	iEmtx = initindex(fp)	
 	ix = 0
-	@inbounds for ai = 1:maxa-mina+1
+	@inbounds for ai = nper:(-1):1
 		for ki = 1:ngpch				
-			ix = ix +1
+			ix = sub2ind((ngpch,nper),ki,ai)
 			#iEmtx.ix[ki,ai,si] = ix					
             iEmtx.ix[ki,ai] = ix                 
 			iEmtx.ch[ix] = ki
-			iEmtx.a[ix] = ai+mina-1
+			iEmtx.a[ix] = ai#+mina-1
 			#iEmtx.s[ix] = si			
 		end
 	end
@@ -343,14 +342,11 @@ end
 function pop_sEmtx(fp::fparams)
     @unpack nind, nsim = fp
     isEmtx = initsimindex(fp)
-    ix = 0
-    @inbounds for i = 1:nind
-        for r = 1:nsim
-            ix = ix+1
-            isEmtx.ix[r,i] = ix
-            isEmtx.rep[ix] = r
-            isEmtx.ind[ix] = i
-        end
+    @inbounds for i = 1:nind, r = 1:nsim
+        ix = sub2ind((nind,nsim),i,r)
+        isEmtx.ix[r,i] = ix
+        isEmtx.rep[ix] = r
+        isEmtx.ind[ix] = i
     end
     return isEmtx
 end
@@ -358,9 +354,8 @@ end
 function pop_cEmtx(fp::fparams)
     @unpack totcti, nstate, nts= fp
     icEmtx = initctindex(fp)   
-    ix = 0
     @inbounds for s =1:nts, sti = 1:nstate #, l1 = 1:ngpl1
-    	ix = ix + 1
+    	ix = sub2ind((nstate,nts),sti,s)
     	icEmtx.ix[sti,s] = ix
     	icEmtx.st[ix] = sti
     	icEmtx.s[ix] = s

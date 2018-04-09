@@ -165,10 +165,11 @@ function fparams(version::Int, gender::String)
     fp0.wgts = π1_2.*[0.0199532,0.393619,0.945309,0.393619,0.0199532] 
     fp0.nds = [-2.02018,-0.958572,2.40258e-16,0.958572,2.02018]
     fp0.hrs = [0.,755.,1520.,2020.,2720.]
-    fp0.minc =  0.12*[243.76015   585.52734375    1030.68603515625;
+    fp0.minc =  25.*ones(4,3)
+    		#=0.12*[243.76015   585.52734375    1030.68603515625;
                 278.58475   601.12744140625 1058.146484375;
                 122.40231   657.0127437770584   870.8584483816646;
-                149.3828    739.7640067152337   990.3343786042017]
+                149.3828    739.7640067152337   990.3343786042017]=#
     return fp0
 end
 
@@ -238,7 +239,7 @@ function dparams(fp::fparams, p0::params, finaln::Array{Float64,1})
     peqs = eqs.^(-θ)
     peqs2 = eqs.^(θ/(θ-1))
     pRβ = (R*β)^(1/(θ-1.))
-    λc = Array{Float64}(nts,ngpch,ngpl,ngpt)
+    λc = zeros(nts,ngpch,ngpl,ngpt)
     for ip = 1:ngpt, i=1:ngpl, ch = 1:ngpch, si = 1:nts
         λh = lambdah(p0,i)
         xh = fxh(p0,si,ch)
@@ -378,6 +379,14 @@ function initEVEDU(fp::fparams)
     lEDU .= single_1(zeros(Float64,ngpk,maxngpe,ngpeitc,ngpl1,toti))
     return lEV, lEDU
 end
+
+function cleanEVEDU!(fp::fparams,lEV::Array{single_1,2},lEDU::Array{single_1,2})
+	@unpack toti, ngpl1, ngpk, maxngpe, ngpeitc, nstate, nts= fp
+	lEV .= single_1(zeros(Float64,ngpk,maxngpe,ngpeitc,ngpl1,toti))
+    lEDU .= single_1(zeros(Float64,ngpk,maxngpe,ngpeitc,ngpl1,toti))
+    return lEV, lEDU
+end
+
 
 function initEVrEDUr(fp::fparams)
     @unpack ngpk, nts, ngpch = fp
