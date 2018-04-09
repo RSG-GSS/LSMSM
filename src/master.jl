@@ -1,7 +1,7 @@
 #import packages, functions, etc. - only uncomment for the first run
 #parallel = "Y-bank"
-#parallel = "Y-off"
-parallel = "N"
+parallel = "Y-off"
+#parallel = "N"
 version = 1
 gender = "f"
 
@@ -62,7 +62,7 @@ obj = objectivefunc!(initp0,fp,moments, draws, lEV, lEDU, lEVr, lEDUr,eitcDict,f
 #this line is for optimization
 #res = optimize(p -> objectivefunc!(p,initp0,fp,moments, draws, lEV, lEDU, eitcDict,fgr,sim,ftDict,ctcDict,stDict),initp0,NelderMead(),Optim.Options(show_trace = true,store_trace = true))
 
-#save("./sample_results.jld", "lEV", lEV, "lEDU", lEDU, "sim", sim, "moments", moments, "obj", obj)
+save("./sample_results.jld", "lEV", lEV, "lEDU", lEDU, "sim", sim, "moments", moments, "obj", obj)
 
 #if parallel == "Y-bank"
 #	rmprocs(myprocs)

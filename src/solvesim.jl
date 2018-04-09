@@ -116,9 +116,9 @@ function solve!(lEDU::Array{single_1,2},lEV::Array{single_1,2},lEDUr::Array{Floa
     
     ##FIRST PART TO PARALLELIZE: SOLUTION
     #comment out for parfor    
-    #res = @sync @parallel (vcat) for icx = 1:fp.totcti
-    #	solveWLwrapper(icx,lEDU, lEV, lEDUr,lEVr,fp,p0,dp,eitcDict,fgr,policy,finaln,ftaxp,ctcp,staxp,ccp)
-    #end
+    #=res = @sync @parallel (vcat) for icx = 1:fp.totcti
+    	solveWLwrapper(icx,lEDU, lEV, lEDUr,lEVr,fp,p0,dp,eitcDict,fgr,policy,finaln,ftaxp,ctcp,staxp,ccp)
+    end=#
 
     #comment out for pmap without batching
     #inputs = [[icx,lEDU,lEV,lEDUr,lEVr,fp,p0,dp,eitcDict,fgr,policy,finaln,ftaxp,ctcp,staxp,ccp] for icx = 1:fp.totcti]
@@ -130,10 +130,10 @@ function solve!(lEDU::Array{single_1,2},lEV::Array{single_1,2},lEDUr::Array{Floa
     #res = pmap((args)->solveWLwrapper(args...),inputs,batch_size=batchsize)
     
 
-    #for icx = 1:fp.totcti
-    #	lEDU[icx].m0 = res[icx][1]
-   	# 	lEV[icx].m0 = res[icx][2]
-    #end
+    #=for icx = 1:fp.totcti
+    	lEDU[icx].m0 = res[icx][1]
+   	 	lEV[icx].m0 = res[icx][2]
+    end=#
 
     for icx = 1:fp.totcti
     	lEDU[icx].m0, lEV[icx].m0= solveWLwrapper(icx,lEDU,lEV,lEDUr,lEVr,fp,p0,dp,eitcDict,fgr,policy,finaln,ftaxp,ctcp,staxp,ccp)
